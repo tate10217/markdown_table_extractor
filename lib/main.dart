@@ -354,12 +354,34 @@ class EditableTableWidget extends StatefulWidget {
 
 class _EditableTableWidgetState extends State<EditableTableWidget> {
   List<List<TextEditingController>> _controllers = [];
+  List<TextEditingController> headerControllers = [];
   String title = '';
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
+    _initializeHeaderControllers();
+  }
+
+  // ヘッダーのテキストフィールドコントローラーを初期化
+  void _initializeHeaderControllers() {
+    if (widget.allowColumnEditing) {
+      var headerRow = _controllers.first;
+      headerControllers = headerRow
+          .map((controller) => TextEditingController(text: controller.text))
+          .toList();
+    }
+  }
+
+  // ヘッダーの変更を処理
+  void _onHeaderChanged() {
+    if (widget.allowColumnEditing) {
+      for (int i = 0; i < headerControllers.length; i++) {
+        _controllers.first[i].text = headerControllers[i].text;
+      }
+      _onFieldChanged();
+    }
   }
 
   void _initializeControllers() {
@@ -434,6 +456,12 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     if (!widget.allowColumnEditing) return;
     // すべての行に新しい列を追加
     setState(() {
+      // ヘッダー行に新しいコントローラーを追加
+      if (headerControllers != null) {
+        headerControllers.add(TextEditingController());
+      }
+
+      // 各データ行に新しいコントローラーを追加
       for (var row in _controllers) {
         row.add(TextEditingController());
       }
@@ -475,12 +503,29 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
 
     // ヘッダー行の処理
     List<String> headers = tableData[0];
-    List<Widget> headerWidgets = headers
-        .map((header) => Expanded(
-            child: Text(header,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                textAlign: widget.headerAlignment)))
-        .toList();
+    List<Widget> headerWidgets = [];
+    for (int i = 0; i < headers.length; i++) {
+      headerWidgets.add(
+        Expanded(
+          child: widget.allowColumnEditing
+              ? TextField(
+                  controller: headerControllers[i],
+                  readOnly: widget.readOnly,
+                  textAlign: alignments[i],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  onChanged: (_) {
+                    _onHeaderChanged();
+                  },
+                )
+              : Text(
+                  headers[i],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  textAlign: widget.headerAlignment,
+                ),
+        ),
+      );
+      headerWidgets.add(const SizedBox(width: 8));
+    }
 
     // データ行の処理
     List<Widget> rowWidgets = [];
