@@ -418,6 +418,7 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
   /// 列揃えコントロールを生成
   Widget _buildAlignmentControl(int columnIndex) {
     return SegmentedButton(
+      showSelectedIcon: false,
       segments: const [
         ButtonSegment(
           icon: Icon(Icons.format_align_left),
@@ -685,51 +686,68 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     List<Widget> columnControlWidgets = List.generate(
       headers.length,
       (index) => Expanded(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // 列揃えコントロール
-            if (widget.isAlignmentControlEnabled) _buildAlignmentControl(index),
-            // 列削除ボタン
-            if (headers.length > 1 && widget.isColumnEditingEnabled)
-              IconButton.filled(
-                icon: Stack(children: [
-                  const Icon(Icons.view_column_outlined),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                        color: Theme.of(context).colorScheme.primary,
-                        child: const Icon(Icons.remove_circle,
-                            size: 14,
-                            weight: 700,
-                            grade: 200,
-                            opticalSize: 48)),
-                  ),
-                ]),
-                onPressed: () => _removeColumn(index),
-              ),
-            // 列追加ボタン
-            if (widget.isColumnEditingEnabled)
-              IconButton.filledTonal(
-                icon: Stack(children: [
-                  const Icon(Icons.view_column_outlined),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        child: const Icon(Icons.add_circle,
-                            size: 14,
-                            weight: 700,
-                            grade: 200,
-                            opticalSize: 48)),
-                  ),
-                ]),
-                onPressed: () => _addColumn(index + 1),
-              ),
-          ],
-        ),
+        child: Row(children: [
+          Expanded(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                // 列揃えコントロール
+                if (widget.isAlignmentControlEnabled)
+                  _buildAlignmentControl(index),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  children: [
+                    // 列削除ボタン
+                    if (headers.length > 1 && widget.isColumnEditingEnabled)
+                      IconButton.filled(
+                        icon: Stack(children: [
+                          const Icon(Icons.view_column_outlined),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                                color: Theme.of(context).colorScheme.primary,
+                                child: const Icon(Icons.remove_circle,
+                                    size: 14,
+                                    weight: 700,
+                                    grade: 200,
+                                    opticalSize: 48)),
+                          ),
+                        ]),
+                        onPressed: () => _removeColumn(index),
+                      ),
+                    // 列追加ボタン
+                    if (widget.isColumnEditingEnabled)
+                      IconButton.filledTonal(
+                        icon: Stack(children: [
+                          const Icon(Icons.view_column_outlined),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                child: const Icon(Icons.add_circle,
+                                    size: 14,
+                                    weight: 700,
+                                    grade: 200,
+                                    opticalSize: 48)),
+                          ),
+                        ]),
+                        onPressed: () => _addColumn(index + 1),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ]),
       ),
     );
 
