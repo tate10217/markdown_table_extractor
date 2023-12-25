@@ -28,49 +28,47 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
   List<String> tables = []; // マークダウンのテーブルを保持するリスト
   List<TablePosition> tablePositions = []; // テーブルの位置を保持するリスト
   String markdownText = '''
-# テスト用マークダウン0
-1
-これは通常のテキストです。以下にマークダウンのテーブルが続きます。2
-3
-| ヘッダ1 | ヘッダ2 | ヘッダ3 | 4 |
-| ------- | ------- | ------- | --- |
-| データ1 | データ2 | データ3 | 6 |
-| データ4 | データ5 | データ6 | 7 |
+# テスト用マークダウン
 
-これはテーブルの間に挿入されたテキストです。9
-10
-## サブセクション11
-12
-- リストアイテム113
-- リストアイテム214
-15
-> 引用文16
-17
-### align属性付きテーブル18
-19
-| 左揃え | 中央揃え | 右揃え | 20 |
-| :----- | :------: | -----: | --- |
-| 左 | 中央 | 右 | 22 |
+これは通常のテキストです。以下にマークダウンのテーブルが続きます。
 
-これは別のセクションです。 24
-25
-### さらに小さいセクション 26
-27
-1. 番号付きリスト1 28
-2. 番号付きリスト2 29
-30
-    コードブロック:31
+| ヘッダ1 | ヘッダ2 | ヘッダ3 |
+| --- | --- | --- |
+| データ1 | データ2 | データ3 |
+| データ4 | データ5 | データ6 |
+
+これはテーブルの間に挿入されたテキストです。
+
+## サブセクション
+
+- リストアイテム1
+- リストアイテム2
+
+> 引用文
+
+| 左揃え | 中央揃え | 右揃え |
+| :--- | :----: | ---: |
+| 左 | 中央 | 右 |
+
+これは別のセクションです。
+
+### さらに小さいセクション
+
+1. 番号付きリスト1
+2. 番号付きリスト2
+
+    コードブロック:
     ```
-    print("Hello World")33
+    print("Hello World")
     ```
-35
-以下、別のテーブルです。36
-37
-| 単一のセル | 38 |
-| ----------- | --- |
-| 単一のデータ | 40 |
 
-これでテスト用のマークダウン文字列は終わりです。42
+以下、別のテーブルです。
+
+| 単一のセル |
+| --- |
+| 単一のデータ |
+
+これでテスト用のマークダウン文字列は終わりです。
 ''';
 
   @override
@@ -281,8 +279,9 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
                             readOnly: false,
                             titleAlignment: TextAlign.left,
                             headerAlignment: TextAlign.center,
-                            allowColumnEditing: true,
-                            allowRowEditing: true,
+                            isRowEditingEnabled: true, // 行編集を有効にする
+                            isColumnEditingEnabled: true, // 列編集を有効にする
+                            isAlignmentControlEnabled: true, // 文字寄せの制御を有効にする
                             onTableChanged: (markdown) {
                               setState(() {
                                 tables[index] = markdown;
@@ -332,8 +331,9 @@ class EditableTableWidget extends StatefulWidget {
   final TextStyle titleStyle;
   final TextAlign titleAlignment;
   final TextAlign headerAlignment;
-  final bool allowRowEditing; // 行編集の許可フラグ
-  final bool allowColumnEditing; // 列編集の許可フラグ
+  final bool isRowEditingEnabled; // 行編集が有効かどうか
+  final bool isColumnEditingEnabled; // 列編集が有効かどうか
+  final bool isAlignmentControlEnabled; // 文字寄せの制御が有効かどうか
   final Function(String)? onTableChanged; // テーブルの変更を検知するコールバック関数
 
   const EditableTableWidget({
@@ -343,8 +343,9 @@ class EditableTableWidget extends StatefulWidget {
     this.titleStyle = const TextStyle(fontWeight: FontWeight.bold),
     this.titleAlignment = TextAlign.left,
     this.headerAlignment = TextAlign.left,
-    this.allowRowEditing = false,
-    this.allowColumnEditing = false,
+    this.isRowEditingEnabled = false,
+    this.isColumnEditingEnabled = false,
+    this.isAlignmentControlEnabled = false,
     this.onTableChanged,
   }) : super(key: key);
 
@@ -355,6 +356,7 @@ class EditableTableWidget extends StatefulWidget {
 class _EditableTableWidgetState extends State<EditableTableWidget> {
   List<List<TextEditingController>> _controllers = [];
   List<TextEditingController> headerControllers = [];
+  List<TextAlign> columnAlignments = []; // 列ごとの文字揃えを管理するためのリスト
   String title = '';
 
   @override
@@ -362,11 +364,12 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     super.initState();
     _initializeControllers();
     _initializeHeaderControllers();
+    _initializeColumnAlignments(widget.tableMarkdown); // マークダウンから列揃えを初期化
   }
 
-  // ヘッダーのテキストフィールドコントローラーを初期化
+  /// ヘッダーのテキストフィールドコントローラーを初期化
   void _initializeHeaderControllers() {
-    if (widget.allowColumnEditing) {
+    if (widget.isColumnEditingEnabled) {
       var headerRow = _controllers.first;
       headerControllers = headerRow
           .map((controller) => TextEditingController(text: controller.text))
@@ -374,9 +377,9 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     }
   }
 
-  // ヘッダーの変更を処理
+  /// ヘッダーの変更を処理
   void _onHeaderChanged() {
-    if (widget.allowColumnEditing) {
+    if (widget.isColumnEditingEnabled) {
       for (int i = 0; i < headerControllers.length; i++) {
         _controllers.first[i].text = headerControllers[i].text;
       }
@@ -384,6 +387,62 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     }
   }
 
+  /// 列揃えの初期化
+  void _initializeColumnAlignments(String markdown) {
+    List<String> lines = markdown.split('\n');
+    // 区切り行（通常は2行目）を探す
+    if (lines.length >= 2) {
+      String separatorLine = lines[1];
+      List<String> separators =
+          separatorLine.split('|').map((s) => s.trim()).toList();
+
+      // 区切り行の最初と最後のセパレータを削除
+      separators.removeAt(0);
+      separators.removeLast();
+
+      // 各セパレータに基づいて揃え方向を判定
+      columnAlignments = separators.map((sep) {
+        if (sep.startsWith(':') && sep.endsWith(':')) {
+          return TextAlign.center;
+        } else if (sep.endsWith(':')) {
+          return TextAlign.right;
+        } else if (sep.startsWith(':')) {
+          return TextAlign.left;
+        } else {
+          return TextAlign.left; // デフォルトは左寄せ
+        }
+      }).toList();
+    }
+  }
+
+  /// 列揃えコントロールを生成
+  Widget _buildAlignmentControl(int columnIndex) {
+    return SegmentedButton(
+      segments: const [
+        ButtonSegment(
+          icon: Icon(Icons.format_align_left),
+          value: TextAlign.left,
+        ),
+        ButtonSegment(
+          icon: Icon(Icons.format_align_center),
+          value: TextAlign.center,
+        ),
+        ButtonSegment(
+          icon: Icon(Icons.format_align_right),
+          value: TextAlign.right,
+        ),
+      ],
+      selected: {columnAlignments[columnIndex]},
+      onSelectionChanged: (value) {
+        setState(() {
+          columnAlignments[columnIndex] = value.first;
+          _onFieldChanged();
+        });
+      },
+    );
+  }
+
+  /// テキストフィールドコントローラーを初期化
   void _initializeControllers() {
     // テーブルの各行を取得
     var rows = widget.tableMarkdown.trim().split('\n');
@@ -406,24 +465,34 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
         .toList();
   }
 
+  /// テキストフィールドの変更を処理
   void _onFieldChanged() {
     var markdownTable = '';
-    markdownTable += _controllers.map((row) {
-      // 2行目だけテーブルの区切り文字が設定されていなければ、区切り文字を追加
-      if (_controllers.indexOf(row) == 1) {
-        for (int i = 0; i < row.length; i++) {
-          if (row[i].text.trim() == '') {
-            row[i].text = '---';
+    // ヘッダー行と区切り行を特別に扱う
+    for (int i = 0; i < _controllers.length; i++) {
+      var row = _controllers[i];
+      if (i == 1) {
+        // 区切り行
+        markdownTable += '| ${List.generate(row.length, (index) {
+          switch (columnAlignments[index]) {
+            case TextAlign.left:
+              return '---';
+            case TextAlign.center:
+              return ':---:';
+            case TextAlign.right:
+              return '---:';
+            default:
+              return '---';
           }
-        }
+        }).join(' | ')} |\n';
+      } else {
+        markdownTable += '| ${row.map((cell) => cell.text).join(' | ')} |\n';
       }
-      return '| ${row.map((cell) => cell.text).join(' | ')} |';
-    }).join('\n');
-    markdownTable += '\n';
-
+    }
     if (widget.onTableChanged != null) widget.onTableChanged!(markdownTable);
   }
 
+  /// 区切り文字からテキストの配置を取得
   TextAlign _getTextAlignment(String separator) {
     if (separator.startsWith(':') && separator.endsWith(':')) {
       return TextAlign.center;
@@ -433,8 +502,9 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     return TextAlign.left;
   }
 
+  /// 行を追加
   void _addRow() {
-    if (!widget.allowRowEditing) return;
+    if (!widget.isRowEditingEnabled) return;
     // すべての列に空のテキストフィールドコントローラーを追加
     setState(() {
       _controllers.add(List.generate(
@@ -443,8 +513,9 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     _onFieldChanged();
   }
 
+  /// 行を削除
   void _removeRow(int index) {
-    if (!widget.allowRowEditing) return;
+    if (!widget.isRowEditingEnabled) return;
     // 指定された行を削除
     setState(() {
       _controllers.removeAt(index);
@@ -452,25 +523,26 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     _onFieldChanged();
   }
 
+  /// 列を追加
   void _addColumn(int index) {
-    if (!widget.allowColumnEditing) return;
+    if (!widget.isColumnEditingEnabled) return;
     // すべての行に新しい列を追加
     setState(() {
       // ヘッダー行に新しいコントローラーを追加
-      if (headerControllers != null) {
-        headerControllers.insert(index, TextEditingController());
-      }
-
+      headerControllers.insert(index, TextEditingController());
       // 各データ行に新しいコントローラーを追加
       for (var row in _controllers) {
         row.insert(index, TextEditingController());
       }
+      // 新しい列のデフォルトの文字寄せを設定（ここでエラーが発生していた）
+      columnAlignments.insert(index, TextAlign.left);
     });
     _onFieldChanged();
   }
 
+  /// 列を削除
   void _removeColumn(int index) {
-    if (!widget.allowColumnEditing) return;
+    if (!widget.isColumnEditingEnabled) return;
     // すべての行から指定された列を削除
     setState(() {
       for (var row in _controllers) {
@@ -480,6 +552,10 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
       }
       if (headerControllers.length > index) {
         headerControllers.removeAt(index);
+      }
+      // 対応する列の寄せ方向を削除
+      if (columnAlignments.length > index) {
+        columnAlignments.removeAt(index);
       }
     });
     _onFieldChanged();
@@ -512,7 +588,7 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     for (int i = 0; i < headers.length; i++) {
       headerWidgets.add(
         Expanded(
-          child: widget.allowColumnEditing
+          child: widget.isColumnEditingEnabled
               ? TextField(
                   controller: headerControllers[i],
                   readOnly: widget.readOnly,
@@ -550,7 +626,7 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
         cellWidgets.add(const SizedBox(width: 8));
       }
       // 行削除ボタン
-      if (widget.allowRowEditing) {
+      if (widget.isRowEditingEnabled) {
         cellWidgets.add(
           IconButton.filled(
               tooltip: '行を削除',
@@ -567,7 +643,7 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
               ]),
               onPressed: () => _removeRow(i)),
         );
-      } else if (widget.allowColumnEditing) {
+      } else if (widget.isColumnEditingEnabled) {
         // 幅を調整するためのダミーウィジェット(透明な本物のボタンを表示)
         cellWidgets.add(const IconButton(icon: Icon(null), onPressed: null));
       }
@@ -575,7 +651,7 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
       rowWidgets.add(Row(children: cellWidgets));
     }
     // 行追加ボタン
-    if (widget.allowRowEditing) {
+    if (widget.isRowEditingEnabled) {
       rowWidgets.add(
         Row(children: [
           Expanded(
@@ -612,21 +688,10 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            IconButton.filledTonal(
-              icon: Stack(children: [
-                const Icon(Icons.view_column_outlined),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      child: const Icon(Icons.add_circle,
-                          size: 14, weight: 700, grade: 200, opticalSize: 48)),
-                ),
-              ]),
-              onPressed: () => _addColumn(index + 1),
-            ),
-            if (headers.length > 1)
+            // 列揃えコントロール
+            if (widget.isAlignmentControlEnabled) _buildAlignmentControl(index),
+            // 列削除ボタン
+            if (headers.length > 1 && widget.isColumnEditingEnabled)
               IconButton.filled(
                 icon: Stack(children: [
                   const Icon(Icons.view_column_outlined),
@@ -644,12 +709,30 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
                 ]),
                 onPressed: () => _removeColumn(index),
               ),
+            // 列追加ボタン
+            if (widget.isColumnEditingEnabled)
+              IconButton.filledTonal(
+                icon: Stack(children: [
+                  const Icon(Icons.view_column_outlined),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        child: const Icon(Icons.add_circle,
+                            size: 14,
+                            weight: 700,
+                            grade: 200,
+                            opticalSize: 48)),
+                  ),
+                ]),
+                onPressed: () => _addColumn(index + 1),
+              ),
           ],
         ),
       ),
     );
 
-    // 横スクロール可能
     return Column(children: [
       if (title.trim() != '')
         Row(children: [
@@ -671,9 +754,9 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
             ]),
           ),
           // 列追加ボタン
-          widget.allowColumnEditing
+          widget.isColumnEditingEnabled
               ? const IconButton(onPressed: null, icon: Icon(null))
-              : widget.allowRowEditing
+              : widget.isRowEditingEnabled
                   ? const IconButton(onPressed: null, icon: Icon(null))
                   : Container(),
         ],
