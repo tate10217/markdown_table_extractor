@@ -452,18 +452,18 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     _onFieldChanged();
   }
 
-  void _addColumn() {
+  void _addColumn(int index) {
     if (!widget.allowColumnEditing) return;
     // すべての行に新しい列を追加
     setState(() {
       // ヘッダー行に新しいコントローラーを追加
       if (headerControllers != null) {
-        headerControllers.add(TextEditingController());
+        headerControllers.insert(index, TextEditingController());
       }
 
       // 各データ行に新しいコントローラーを追加
       for (var row in _controllers) {
-        row.add(TextEditingController());
+        row.insert(index, TextEditingController());
       }
     });
     _onFieldChanged();
@@ -474,7 +474,12 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     // すべての行から指定された列を削除
     setState(() {
       for (var row in _controllers) {
-        row.removeAt(index);
+        if (row.length > index) {
+          row.removeAt(index);
+        }
+      }
+      if (headerControllers.length > index) {
+        headerControllers.removeAt(index);
       }
     });
     _onFieldChanged();
@@ -600,6 +605,51 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
       );
     }
 
+    // 列の追加・削除を行うウィジェット行の生成
+    List<Widget> columnControlWidgets = List.generate(
+      headers.length,
+      (index) => Expanded(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton.filledTonal(
+              icon: Stack(children: [
+                const Icon(Icons.view_column_outlined),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      child: const Icon(Icons.add_circle,
+                          size: 14, weight: 700, grade: 200, opticalSize: 48)),
+                ),
+              ]),
+              onPressed: () => _addColumn(index + 1),
+            ),
+            if (headers.length > 1)
+              IconButton.filled(
+                icon: Stack(children: [
+                  const Icon(Icons.view_column_outlined),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                        color: Theme.of(context).colorScheme.primary,
+                        child: const Icon(Icons.remove_circle,
+                            size: 14,
+                            weight: 700,
+                            grade: 200,
+                            opticalSize: 48)),
+                  ),
+                ]),
+                onPressed: () => _removeColumn(index),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    // 横スクロール可能
     return Column(children: [
       if (title.trim() != '')
         Row(children: [
@@ -614,26 +664,15 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
       // テーブルヘッダー
       Row(
         children: [
-          Expanded(child: Row(children: headerWidgets)),
+          Expanded(
+            child: Column(children: [
+              Row(children: columnControlWidgets),
+              Row(children: headerWidgets),
+            ]),
+          ),
           // 列追加ボタン
           widget.allowColumnEditing
-              ? IconButton.filledTonal(
-                  tooltip: '列を追加',
-                  icon: Stack(children: [
-                    const Icon(Icons.view_column_outlined),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          child: const Icon(Icons.add_circle,
-                              size: 14,
-                              weight: 700,
-                              grade: 200,
-                              opticalSize: 48)),
-                    ),
-                  ]),
-                  onPressed: _addColumn)
+              ? const IconButton(onPressed: null, icon: Icon(null))
               : widget.allowRowEditing
                   ? const IconButton(onPressed: null, icon: Icon(null))
                   : Container(),
