@@ -100,6 +100,50 @@ class MarkdownTableProcessor {
     return tables;
   }
 
+  /// マークダウンテキストからテーブルを除外したセクションを抽出し、それらのリストを返す。
+  ///
+  /// - [`markdown`] は処理されるマークダウン形式の文字列です。
+  ///
+  /// このメソッドは、マークダウン内のテーブルを除外し、
+  /// テーブル以外のセクションを個別の文字列として返します。
+  List<String> extractNonTableMarkdownSections(String markdown) {
+    List<String> lines = markdown.split('\n'); // Markdownテキストを行に分割
+    List<String> nonTableSections = [];
+    StringBuffer currentSection = StringBuffer(); // 現在処理中のセクションを構築
+    bool inTable = false; // 現在テーブル内かを追跡
+
+    for (String line in lines) {
+      var trimmedLine = line.trim(); // 行の前後の空白を削除
+
+      // テーブルの境界行を処理
+      if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
+        if (!inTable) {
+          // 新しいテーブルの開始前に、現在のセクションをリストに追加
+          if (currentSection.isNotEmpty) {
+            nonTableSections.add(currentSection.toString());
+            currentSection.clear();
+          }
+          inTable = true;
+        }
+        continue;
+      } else if (inTable) {
+        // テーブルの終了
+        inTable = false;
+        continue;
+      }
+
+      // テーブル以外の行を現在のセクションに追加
+      currentSection.writeln(line);
+    }
+
+    // 最後のセクションを処理
+    if (currentSection.isNotEmpty) {
+      nonTableSections.add(currentSection.toString());
+    }
+
+    return nonTableSections;
+  }
+
   /// 編集されたテーブルを元のマークダウンテキストにマージする。
   ///
   /// - [originalMarkdown] は元のマークダウンテキストです。

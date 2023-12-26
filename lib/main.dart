@@ -38,6 +38,7 @@ class MarkdownTableExtractor extends StatefulWidget {
 
 class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
   List<String> tables = []; // マークダウンのテーブルを保持するリスト
+  List<String> nonTableTexts = []; // マークダウンのテーブル以外のテキストを保持するリスト
   String markdownText = '''
 | ヘッダ1 | ヘッダ2 | ヘッダ3 |
 | --- | --- | --- |
@@ -80,17 +81,24 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
 これでテスト用のマークダウン文字列は終わりです。
 ''';
   final MarkdownTableProcessor tableProcessor = MarkdownTableProcessor();
-
   @override
   void initState() {
     super.initState();
     // 初期化時にMarkdownテキストからテーブルを抽出する
     tables = tableProcessor.extractMarkdownTables(markdownText,
         includeHeading: true);
+    // 初期化時にMarkdownテキストからテーブル以外のテキストを抽出する
+    nonTableTexts =
+        tableProcessor.extractNonTableMarkdownSections(markdownText);
+
     print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-    print('MarkdownTableExtractor.initState()');
     print(markdownText);
     print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+    print('+++++++++++++++++++++++++++++++++++++');
+    for (var bbb in nonTableTexts) {
+      print(bbb);
+    }
+    print('+++++++++++++++++++++++++++++++++++++');
   }
 
   @override
@@ -131,10 +139,18 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
                                     .mergeEditedTablesIntoMarkdown(
                                         markdownText, tables);
                                 print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-                                print(
-                                    'MarkdownTableExtractor.onTableChanged()');
                                 print(markdownText);
                                 print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+
+                                // 初期化時にMarkdownテキストからテーブル以外のテキストを抽出する
+                                nonTableTexts = tableProcessor
+                                    .extractNonTableMarkdownSections(
+                                        markdownText);
+                                print('+++++++++++++++++++++++++++++++++++++');
+                                for (var bbb in nonTableTexts) {
+                                  print(bbb);
+                                }
+                                print('+++++++++++++++++++++++++++++++++++++');
                               });
                             },
                           ),
@@ -144,6 +160,17 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
                   ),
                 ]),
               ),
+              // テーブル以外のmarkdownを表示する
+              // Card(
+              //   child: Container(
+              //     width: 500,
+              //     padding: const EdgeInsets.all(8.0),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: nonTableTexts.map((text) => Text(text)).toList(),
+              //     ),
+              //   ),
+              // ),
               // markdownを表示する
               const SizedBox(height: 24),
               Card(
