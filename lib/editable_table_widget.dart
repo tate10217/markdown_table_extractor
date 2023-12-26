@@ -150,6 +150,16 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
           _onFieldChanged();
         });
       },
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.resolveWith((states) =>
+            states.contains(MaterialState.selected)
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.surfaceVariant),
+        foregroundColor: MaterialStateProperty.resolveWith((states) =>
+            states.contains(MaterialState.selected)
+                ? Theme.of(context).colorScheme.onPrimary
+                : null),
+      ),
     );
   }
 
@@ -299,24 +309,26 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
     for (int i = 0; i < headers.length; i++) {
       headerWidgets.add(
         Expanded(
-          child: widget.isColumnEditingEnabled
-              ? TextField(
-                  controller: headerControllers[i],
-                  readOnly: widget.readOnly,
-                  textAlign: alignments[i],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  onChanged: (_) {
-                    _onHeaderChanged();
-                  },
-                )
-              : Text(
-                  headers[i],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  textAlign: widget.headerAlignment,
-                ),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: widget.isColumnEditingEnabled
+                ? TextField(
+                    controller: headerControllers[i],
+                    readOnly: widget.readOnly,
+                    textAlign: alignments[i],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    onChanged: (_) {
+                      _onHeaderChanged();
+                    },
+                  )
+                : Text(
+                    headers[i],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    textAlign: widget.headerAlignment,
+                  ),
+          ),
         ),
       );
-      headerWidgets.add(const SizedBox(width: 8));
     }
 
     // データ行の処理
@@ -325,16 +337,18 @@ class _EditableTableWidgetState extends State<EditableTableWidget> {
       List<Widget> cellWidgets = [];
       for (int j = 0; j < tableData[i].length; j++) {
         cellWidgets.add(Expanded(
-          child: TextField(
-            controller: _controllers[i][j],
-            readOnly: widget.readOnly,
-            textAlign: alignments[j],
-            onChanged: (_) {
-              _onFieldChanged(); // テキストフィールドの変更を検知
-            },
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: TextField(
+              controller: _controllers[i][j],
+              readOnly: widget.readOnly,
+              textAlign: alignments[j],
+              onChanged: (_) {
+                _onFieldChanged(); // テキストフィールドの変更を検知
+              },
+            ),
           ),
         ));
-        cellWidgets.add(const SizedBox(width: 8));
       }
       // 行削除ボタン
       if (widget.isRowEditingEnabled) {
