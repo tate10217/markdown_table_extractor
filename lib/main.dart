@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
+import 'editable_table_widget.dart';
+import 'markdown_table_processing.dart';
+
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
@@ -17,7 +20,16 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// -----------------------------------------------
+/// [概要]   : Markdownテキストからテーブルを抽出し、編集可能なフォームとして表示するウィジェット
+/// [作成者] : TCC S.Tate
+/// [作成日] : 2023/12/26
+/// -----------------------------------------------
 class MarkdownTableExtractor extends StatefulWidget {
+  /// コンストラクタは、Markdownテキスト処理ウィジェットを初期化する。
+  ///
+  /// `MarkdownTableExtractor` クラスは、Markdownテキストからテーブルを抽出し、
+  /// それらを編集可能なフォームとしてユーザーに表示する機能を提供する。
   const MarkdownTableExtractor({super.key});
 
   @override
@@ -26,12 +38,7 @@ class MarkdownTableExtractor extends StatefulWidget {
 
 class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
   List<String> tables = []; // マークダウンのテーブルを保持するリスト
-  List<TablePosition> tablePositions = []; // テーブルの位置を保持するリスト
   String markdownText = '''
-# テスト用マークダウン
-
-これは通常のテキストです。以下にマークダウンのテーブルが続きます。
-
 | ヘッダ1 | ヘッダ2 | ヘッダ3 |
 | --- | --- | --- |
 | データ1 | データ2 | データ3 |
@@ -45,6 +52,8 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
 - リストアイテム2
 
 > 引用文
+
+## 見出し付きテーブル
 
 | 左揃え | 中央揃え | 右揃え |
 | :--- | :----: | ---: |
@@ -65,190 +74,23 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
 以下、別のテーブルです。
 
 | 単一のセル |
-| --- |
+| :---: |
 | 単一のデータ |
 
 これでテスト用のマークダウン文字列は終わりです。
 ''';
+  final MarkdownTableProcessor tableProcessor = MarkdownTableProcessor();
 
   @override
   void initState() {
     super.initState();
-    tables = extractMarkdownTables(markdownText, includeHeading: true);
+    // 初期化時にMarkdownテキストからテーブルを抽出する
+    tables = tableProcessor.extractMarkdownTables(markdownText,
+        includeHeading: true);
     print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+    print('MarkdownTableExtractor.initState()');
     print(markdownText);
     print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-  }
-
-  /// マークダウンテキストからテーブルを抽出
-  List<String> extractMarkdownTables(String markdown,
-      {bool includeHeading = true}) {
-    List<String> lines = markdown.split('\n'); // Markdownテキストを行に分割
-    List<String> tables = [];
-    bool inTable = false; // 現在テーブル内かを追跡
-    bool textBetweenHeadingAndTable = false; // 見出しとテーブルの間にテキストがあるかを追跡
-    StringBuffer currentTable = StringBuffer(); // 現在処理中のテーブルを構築
-    String lastHeading = ''; // 最後に見つかった見出しを保持
-    int startLineIndex = -1; // テーブルの開始位置を追跡
-    int endLineIndex = -1; // テーブルの終了位置を追跡
-
-    for (String line in lines) {
-      var trimmedLine = line.trim(); // 行の前後の空白を削除
-
-      // 見出し行を処理
-      if (includeHeading && trimmedLine.startsWith('#')) {
-        if (inTable) {
-          // テーブル内に見出しがある場合は、現在のテーブルを終了
-          tables.add(currentTable.toString());
-          currentTable.clear();
-          inTable = false;
-        }
-        lastHeading = trimmedLine; // 見出しを更新
-        textBetweenHeadingAndTable = false; // 見出しとテーブルの間のテキストフラグをリセット
-        continue;
-      }
-
-      // 空行を処理
-      if (line.isEmpty || line.trim().isEmpty) {
-        if (inTable) {
-          // テーブル内の空行は、テーブルの終了を意味する
-          tables.add(currentTable.toString());
-          currentTable.clear();
-          inTable = false;
-        }
-        continue;
-      }
-
-      // 見出しとテーブルの間にテキストがあるかをチェック
-      if (!trimmedLine.startsWith('|') &&
-          !trimmedLine.endsWith('|') &&
-          !inTable) {
-        textBetweenHeadingAndTable = true;
-      }
-
-      // テーブルの境界行を処理
-      if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
-        if (!inTable) {
-          // 新しいテーブルを開始
-          inTable = true;
-          if (includeHeading &&
-              lastHeading.isNotEmpty &&
-              !textBetweenHeadingAndTable) {
-            currentTable.writeln(lastHeading); // 見出しをテーブルに追加
-            lastHeading = ''; // 見出しをリセット
-          }
-        }
-        currentTable.writeln(trimmedLine); // テーブル行を追加
-      } else if (inTable) {
-        // テーブル行ではない場合、テーブルの終了
-        tables.add(currentTable.toString());
-        currentTable.clear();
-        inTable = false;
-        lastHeading = '';
-      }
-
-      // テーブルの開始を追跡
-      if (inTable && startLineIndex == -1) {
-        startLineIndex = lines.indexOf(line); // テーブルの開始行を設定
-        print('--------------------------------------------------');
-        print('テーブルの開始行: $startLineIndex');
-        print('$line');
-      }
-      // テーブルの終了を追跡
-      if ((!inTable || line.trim() == '') && startLineIndex != -1) {
-        endLineIndex = lines.indexOf(line) - 1; // テーブルの終了行を設定
-        tablePositions.add(
-            TablePosition(startLine: startLineIndex, endLine: endLineIndex));
-        startLineIndex = -1; // リセット
-        print('テーブルの終了行: $endLineIndex');
-        print('${lines[endLineIndex]}');
-        print('--------------------------------------------------');
-      }
-    }
-
-    // 最後のテーブルを処理
-    if (inTable) {
-      tables.add(currentTable.toString());
-    }
-
-    return tables;
-  }
-
-  /// 編集されたテーブルを元のマークダウンテキストにマージ
-  void mergeEditedTablesIntoMarkdown() {
-    List<String> originalLines = markdownText.split('\n');
-    List<String> mergedLines = [];
-    int currentTableIndex = 0;
-    // tablePositionsをdeepコピー
-    List<TablePosition> newTablePositions = [];
-    for (int i = 0; i < tablePositions.length; i++) {
-      newTablePositions.add(TablePosition(
-          startLine: tablePositions[i].startLine,
-          endLine: tablePositions[i].endLine));
-    }
-
-    for (int i = 0; i < originalLines.length; i++) {
-      List<String> aaa = []; //! debug
-      if (currentTableIndex < tables.length &&
-          i == tablePositions[currentTableIndex].startLine) {
-        List<String> newTableLines = tables[currentTableIndex].split('\n');
-        int offset = 0; // 現在のオフセット（行数の変化）
-
-        // デバッグ出力: 編集前のテーブル位置と内容
-        print('...................................................');
-        print('編集前 - テーブル $currentTableIndex: '
-            '開始行 ${tablePositions[currentTableIndex].startLine}, '
-            '終了行 ${tablePositions[currentTableIndex].endLine}');
-        print('編集前のテーブル内容:');
-        for (int k = tablePositions[currentTableIndex].startLine;
-            k <= tablePositions[currentTableIndex].endLine;
-            k++) {
-          print(originalLines[k]);
-        }
-
-        // 新しいテーブルの内容を追加
-        mergedLines.addAll(newTableLines);
-
-        // オフセット（行数の変化）を計算
-        int originalTableLength = tablePositions[currentTableIndex].endLine -
-            tablePositions[currentTableIndex].startLine +
-            1;
-        int editedTableLength = newTableLines.length;
-        offset = editedTableLength - originalTableLength;
-
-        // デバッグ出力: 編集されたテーブルの内容と行数
-        print('編集されたテーブルの内容（$editedTableLength行）:');
-        newTableLines.forEach((line) => print(line));
-
-        // 元のテーブルの範囲をスキップ
-        i = tablePositions[currentTableIndex].endLine;
-
-        // 次のテーブルの位置を更新
-        for (int j = currentTableIndex + 0; j < tablePositions.length; j++) {
-          if (j > currentTableIndex) newTablePositions[j].startLine += offset;
-          newTablePositions[j].endLine += offset;
-          // デバッグ出力: offset
-          aaa.add('\noffset: $offset  -> テーブル $j: '
-              '開始行 ${newTablePositions[j].startLine}, '
-              '終了行 ${newTablePositions[j].endLine}');
-        }
-
-        // デバッグ出力: 編集後のテーブル位置
-        print('編集後 - テーブル $currentTableIndex: '
-            '開始行 ${tablePositions[currentTableIndex].startLine}, '
-            '終了行 ${tablePositions[currentTableIndex].endLine}');
-        print(aaa);
-        print('...................................................');
-
-        currentTableIndex++;
-      } else if (currentTableIndex >= tables.length ||
-          i < tablePositions[currentTableIndex].startLine) {
-        mergedLines.add(originalLines[i]);
-      }
-    }
-
-    tablePositions = newTablePositions;
-    markdownText = mergedLines.join('\n');
   }
 
   @override
@@ -285,8 +127,12 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
                             onTableChanged: (markdown) {
                               setState(() {
                                 tables[index] = markdown;
-                                mergeEditedTablesIntoMarkdown();
+                                markdownText = tableProcessor
+                                    .mergeEditedTablesIntoMarkdown(
+                                        markdownText, tables);
                                 print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+                                print(
+                                    'MarkdownTableExtractor.onTableChanged()');
                                 print(markdownText);
                                 print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
                               });
@@ -322,473 +168,4 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
       ),
     );
   }
-}
-
-/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */
-class EditableTableWidget extends StatefulWidget {
-  final String tableMarkdown;
-  final bool readOnly;
-  final TextStyle titleStyle;
-  final TextAlign titleAlignment;
-  final TextAlign headerAlignment;
-  final bool isRowEditingEnabled; // 行編集が有効かどうか
-  final bool isColumnEditingEnabled; // 列編集が有効かどうか
-  final bool isAlignmentControlEnabled; // 文字寄せの制御が有効かどうか
-  final Function(String)? onTableChanged; // テーブルの変更を検知するコールバック関数
-
-  const EditableTableWidget({
-    Key? key,
-    required this.tableMarkdown,
-    this.readOnly = false,
-    this.titleStyle = const TextStyle(fontWeight: FontWeight.bold),
-    this.titleAlignment = TextAlign.left,
-    this.headerAlignment = TextAlign.left,
-    this.isRowEditingEnabled = false,
-    this.isColumnEditingEnabled = false,
-    this.isAlignmentControlEnabled = false,
-    this.onTableChanged,
-  }) : super(key: key);
-
-  @override
-  _EditableTableWidgetState createState() => _EditableTableWidgetState();
-}
-
-class _EditableTableWidgetState extends State<EditableTableWidget> {
-  List<List<TextEditingController>> _controllers = [];
-  List<TextEditingController> headerControllers = [];
-  List<TextAlign> columnAlignments = []; // 列ごとの文字揃えを管理するためのリスト
-  String title = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeControllers();
-    _initializeHeaderControllers();
-    _initializeColumnAlignments(widget.tableMarkdown); // マークダウンから列揃えを初期化
-  }
-
-  /// ヘッダーのテキストフィールドコントローラーを初期化
-  void _initializeHeaderControllers() {
-    if (widget.isColumnEditingEnabled) {
-      var headerRow = _controllers.first;
-      headerControllers = headerRow
-          .map((controller) => TextEditingController(text: controller.text))
-          .toList();
-    }
-  }
-
-  /// ヘッダーの変更を処理
-  void _onHeaderChanged() {
-    if (widget.isColumnEditingEnabled) {
-      for (int i = 0; i < headerControllers.length; i++) {
-        _controllers.first[i].text = headerControllers[i].text;
-      }
-      _onFieldChanged();
-    }
-  }
-
-  /// 列揃えの初期化
-  void _initializeColumnAlignments(String markdown) {
-    List<String> lines = markdown.split('\n');
-    // 区切り行（通常は2行目）を探す
-    if (lines.length >= 2) {
-      String separatorLine = lines[1];
-      List<String> separators =
-          separatorLine.split('|').map((s) => s.trim()).toList();
-
-      // 区切り行の最初と最後のセパレータを削除
-      separators.removeAt(0);
-      separators.removeLast();
-
-      // 各セパレータに基づいて揃え方向を判定
-      columnAlignments = separators.map((sep) {
-        if (sep.startsWith(':') && sep.endsWith(':')) {
-          return TextAlign.center;
-        } else if (sep.endsWith(':')) {
-          return TextAlign.right;
-        } else if (sep.startsWith(':')) {
-          return TextAlign.left;
-        } else {
-          return TextAlign.left; // デフォルトは左寄せ
-        }
-      }).toList();
-    }
-  }
-
-  /// 列揃えコントロールを生成
-  Widget _buildAlignmentControl(int columnIndex) {
-    return SegmentedButton(
-      showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(
-          icon: Icon(Icons.format_align_left),
-          value: TextAlign.left,
-        ),
-        ButtonSegment(
-          icon: Icon(Icons.format_align_center),
-          value: TextAlign.center,
-        ),
-        ButtonSegment(
-          icon: Icon(Icons.format_align_right),
-          value: TextAlign.right,
-        ),
-      ],
-      selected: {columnAlignments[columnIndex]},
-      onSelectionChanged: (value) {
-        setState(() {
-          columnAlignments[columnIndex] = value.first;
-          _onFieldChanged();
-        });
-      },
-    );
-  }
-
-  /// テキストフィールドコントローラーを初期化
-  void _initializeControllers() {
-    // テーブルの各行を取得
-    var rows = widget.tableMarkdown.trim().split('\n');
-    // rowsの最初の行に"#"が含まれている場合は、見出し行として扱う
-    if (rows.first.startsWith('#')) {
-      rows.removeAt(0);
-    }
-    // テーブルデータを取得
-    var tableData = rows
-        .map((row) => row
-            .split('|')
-            .where((cell) => cell.isNotEmpty)
-            .map((cell) => cell.trim())
-            .toList())
-        .toList();
-    // テキストフィールドのコントローラーにテーブルデータを設定
-    _controllers = tableData
-        .map((row) =>
-            row.map((cell) => TextEditingController(text: cell)).toList())
-        .toList();
-  }
-
-  /// テキストフィールドの変更を処理
-  void _onFieldChanged() {
-    var markdownTable = '';
-    // ヘッダー行と区切り行を特別に扱う
-    for (int i = 0; i < _controllers.length; i++) {
-      var row = _controllers[i];
-      if (i == 1) {
-        // 区切り行
-        markdownTable += '| ${List.generate(row.length, (index) {
-          switch (columnAlignments[index]) {
-            case TextAlign.left:
-              return '---';
-            case TextAlign.center:
-              return ':---:';
-            case TextAlign.right:
-              return '---:';
-            default:
-              return '---';
-          }
-        }).join(' | ')} |\n';
-      } else {
-        markdownTable += '| ${row.map((cell) => cell.text).join(' | ')} |\n';
-      }
-    }
-    if (widget.onTableChanged != null) widget.onTableChanged!(markdownTable);
-  }
-
-  /// 区切り文字からテキストの配置を取得
-  TextAlign _getTextAlignment(String separator) {
-    if (separator.startsWith(':') && separator.endsWith(':')) {
-      return TextAlign.center;
-    } else if (separator.endsWith(':')) {
-      return TextAlign.right;
-    }
-    return TextAlign.left;
-  }
-
-  /// 行を追加
-  void _addRow() {
-    if (!widget.isRowEditingEnabled) return;
-    // すべての列に空のテキストフィールドコントローラーを追加
-    setState(() {
-      _controllers.add(List.generate(
-          _controllers[0].length, (_) => TextEditingController()));
-    });
-    _onFieldChanged();
-  }
-
-  /// 行を削除
-  void _removeRow(int index) {
-    if (!widget.isRowEditingEnabled) return;
-    // 指定された行を削除
-    setState(() {
-      _controllers.removeAt(index);
-    });
-    _onFieldChanged();
-  }
-
-  /// 列を追加
-  void _addColumn(int index) {
-    if (!widget.isColumnEditingEnabled) return;
-    // すべての行に新しい列を追加
-    setState(() {
-      // ヘッダー行に新しいコントローラーを追加
-      headerControllers.insert(index, TextEditingController());
-      // 各データ行に新しいコントローラーを追加
-      for (var row in _controllers) {
-        row.insert(index, TextEditingController());
-      }
-      // 新しい列のデフォルトの文字寄せを設定（ここでエラーが発生していた）
-      columnAlignments.insert(index, TextAlign.left);
-    });
-    _onFieldChanged();
-  }
-
-  /// 列を削除
-  void _removeColumn(int index) {
-    if (!widget.isColumnEditingEnabled) return;
-    // すべての行から指定された列を削除
-    setState(() {
-      for (var row in _controllers) {
-        if (row.length > index) {
-          row.removeAt(index);
-        }
-      }
-      if (headerControllers.length > index) {
-        headerControllers.removeAt(index);
-      }
-      // 対応する列の寄せ方向を削除
-      if (columnAlignments.length > index) {
-        columnAlignments.removeAt(index);
-      }
-    });
-    _onFieldChanged();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<String> rows = widget.tableMarkdown.trim().split('\n');
-    // rowsの最初の行に"#"が含まれている場合は、見出し行として扱う
-    if (rows[0].startsWith('#')) {
-      title = rows[0];
-      rows.removeAt(0);
-    }
-    // テーブルデータを取得
-    List<List<String>> tableData = rows
-        .map((row) => row
-            .split('|')
-            .where((cell) => cell.isNotEmpty)
-            .map((cell) => cell.trim())
-            .toList())
-        .toList();
-
-    List<String> separators = tableData[1]; // テーブルの区切り文字を取得
-    List<TextAlign> alignments =
-        separators.map(_getTextAlignment).toList(); // 区切り文字からテキストの配置を取得
-
-    // ヘッダー行の処理
-    List<String> headers = tableData[0];
-    List<Widget> headerWidgets = [];
-    for (int i = 0; i < headers.length; i++) {
-      headerWidgets.add(
-        Expanded(
-          child: widget.isColumnEditingEnabled
-              ? TextField(
-                  controller: headerControllers[i],
-                  readOnly: widget.readOnly,
-                  textAlign: alignments[i],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  onChanged: (_) {
-                    _onHeaderChanged();
-                  },
-                )
-              : Text(
-                  headers[i],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  textAlign: widget.headerAlignment,
-                ),
-        ),
-      );
-      headerWidgets.add(const SizedBox(width: 8));
-    }
-
-    // データ行の処理
-    List<Widget> rowWidgets = [];
-    for (int i = 2; i < tableData.length; i++) {
-      List<Widget> cellWidgets = [];
-      for (int j = 0; j < tableData[i].length; j++) {
-        cellWidgets.add(Expanded(
-          child: TextField(
-            controller: _controllers[i][j],
-            readOnly: widget.readOnly,
-            textAlign: alignments[j],
-            onChanged: (_) {
-              _onFieldChanged(); // テキストフィールドの変更を検知
-            },
-          ),
-        ));
-        cellWidgets.add(const SizedBox(width: 8));
-      }
-      // 行削除ボタン
-      if (widget.isRowEditingEnabled) {
-        cellWidgets.add(
-          IconButton.filled(
-              tooltip: '行を削除',
-              icon: Stack(children: [
-                const Icon(Icons.table_rows_outlined),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                      color: Theme.of(context).colorScheme.primary,
-                      child: const Icon(Icons.remove_circle,
-                          size: 14, weight: 700, grade: 200, opticalSize: 48)),
-                ),
-              ]),
-              onPressed: () => _removeRow(i)),
-        );
-      } else if (widget.isColumnEditingEnabled) {
-        // 幅を調整するためのダミーウィジェット(透明な本物のボタンを表示)
-        cellWidgets.add(const IconButton(icon: Icon(null), onPressed: null));
-      }
-      // 項目
-      rowWidgets.add(Row(children: cellWidgets));
-    }
-    // 行追加ボタン
-    if (widget.isRowEditingEnabled) {
-      rowWidgets.add(
-        Row(children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: IconButton.filledTonal(
-                tooltip: '行を追加',
-                icon: Stack(children: [
-                  const Icon(Icons.table_rows_outlined),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        child: const Icon(Icons.add_circle,
-                            size: 14,
-                            weight: 700,
-                            grade: 200,
-                            opticalSize: 48)),
-                  ),
-                ]),
-                onPressed: _addRow,
-              ),
-            ),
-          ),
-        ]),
-      );
-    }
-
-    // 列の追加・削除を行うウィジェット行の生成
-    List<Widget> columnControlWidgets = List.generate(
-      headers.length,
-      (index) => Expanded(
-        child: Row(children: [
-          Expanded(
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                // 列揃えコントロール
-                if (widget.isAlignmentControlEnabled)
-                  _buildAlignmentControl(index),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  children: [
-                    // 列削除ボタン
-                    if (headers.length > 1 && widget.isColumnEditingEnabled)
-                      IconButton.filled(
-                        icon: Stack(children: [
-                          const Icon(Icons.view_column_outlined),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                                color: Theme.of(context).colorScheme.primary,
-                                child: const Icon(Icons.remove_circle,
-                                    size: 14,
-                                    weight: 700,
-                                    grade: 200,
-                                    opticalSize: 48)),
-                          ),
-                        ]),
-                        onPressed: () => _removeColumn(index),
-                      ),
-                    // 列追加ボタン
-                    if (widget.isColumnEditingEnabled)
-                      IconButton.filledTonal(
-                        icon: Stack(children: [
-                          const Icon(Icons.view_column_outlined),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer,
-                                child: const Icon(Icons.add_circle,
-                                    size: 14,
-                                    weight: 700,
-                                    grade: 200,
-                                    opticalSize: 48)),
-                          ),
-                        ]),
-                        onPressed: () => _addColumn(index + 1),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-        ]),
-      ),
-    );
-
-    return Column(children: [
-      if (title.trim() != '')
-        Row(children: [
-          Expanded(
-            child: Text(
-              title.replaceAll('#', '').trim(),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              textAlign: widget.titleAlignment,
-            ),
-          ),
-        ]),
-      // テーブルヘッダー
-      Row(
-        children: [
-          Expanded(
-            child: Column(children: [
-              Row(children: columnControlWidgets),
-              Row(children: headerWidgets),
-            ]),
-          ),
-          // 列追加ボタン
-          widget.isColumnEditingEnabled
-              ? const IconButton(onPressed: null, icon: Icon(null))
-              : widget.isRowEditingEnabled
-                  ? const IconButton(onPressed: null, icon: Icon(null))
-                  : Container(),
-        ],
-      ),
-      // テーブルデータ
-      Column(children: rowWidgets),
-    ]);
-  }
-}
-
-/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */
-class TablePosition {
-  int startLine;
-  int endLine;
-
-  TablePosition({required this.startLine, required this.endLine});
 }
