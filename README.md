@@ -1,16 +1,33 @@
-# flutter_application_1
+# Flutter マークダウン テーブル エディタ
 
-A new Flutter project.
+## 概要
+このFlutterプロジェクトは、マークダウンテーブルのレンダリングと編集に対応する多機能なソリューションを提供します。主に3つのDartファイルで構成され、アプリケーションの異なる側面をそれぞれ処理します。
 
-## Getting Started
+## ファイルの説明
 
-This project is a starting point for a Flutter application.
+### `markdown_table_processing.dart`
+このファイルには、マークダウンテーブルデータの処理に関するロジックが含まれていると思われます。マークダウン構文の解析、テーブルデータの操作、Flutterウィジェットでのレンダリングに適した形式への変換などの機能が含まれている可能性があります。
 
-A few resources to get you started if this is your first Flutter project:
+### `editable_table_widget.dart`
+このDartファイルでは、Flutterアプリ内でマークダウンテーブルを表示・編集するためのカスタムウィジェット`EditableTableWidget`を定義しています。このウィジェットは、ユーザーがテーブルの内容を対話的に変更できるようにし、列やタイトルの編集可否を設定できるようになっています。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### `main.dart`
+`main.dart`ファイルはFlutterアプリケーションのエントリーポイントとして機能します。MaterialAppのセットアップや初期ルートの設定など、アプリの基本構造を設定しています。`EditableTableWidget`の使用方法をデモンストレーションしている可能性が高いです。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 特徴
+- **マークダウンテーブルの処理**: マークダウンテーブルデータの効率的な処理、解析と生成が可能。
+- **編集可能なテーブル**: アプリ内で直接コンテンツを編集できるインタラクティブなテーブル。
+- **カスタマイズ可能なテーブルウィジェット**: テーブルを読み取り専用または編集可能に設定するオプション、列とタイトルの編集可否を別々に制御。
+
+## はじめに
+このプロジェクトを始めるために：
+1. システムにFlutterがインストールされていることを確認してください。
+2. リポジトリをローカルマシンにクローンします。
+3. 好きなFlutter IDEでプロジェクトを開きます。
+4. アプリケーションを実行して実際の動作を確認します。
+
+## 貢献
+このプロジェクトへの貢献は歓迎します。プロジェクトのコーディング基準に従い、プルリクエストを送信してレビューを受けてください。
+
+## ライセンス
+―――
