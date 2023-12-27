@@ -160,7 +160,7 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
                   ),
                 ]),
               ),
-              // テーブル以外のmarkdownを表示する
+              //@ テーブル以外のmarkdownを表示する
               // Card(
               //   child: Container(
               //     width: 500,
@@ -171,7 +171,7 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
               //     ),
               //   ),
               // ),
-              // markdownを表示する
+              //@ markdownを表示する
               // const SizedBox(height: 24),
               // Card(
               //   child: Container(
@@ -180,7 +180,7 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
               //     child: MarkdownBody(data: markdownText),
               //   ),
               // ),
-              // markdown文字列を表示する
+              //@ markdown文字列を表示する
               const SizedBox(height: 24),
               Card(
                 child: Container(
