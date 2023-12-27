@@ -1,7 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+// import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'editable_table_widget.dart';
 import 'markdown_table_processing.dart';
@@ -172,14 +172,14 @@ class _MarkdownTableExtractorState extends State<MarkdownTableExtractor> {
               //   ),
               // ),
               // markdownを表示する
-              const SizedBox(height: 24),
-              Card(
-                child: Container(
-                  width: 500,
-                  padding: const EdgeInsets.all(8.0),
-                  child: MarkdownBody(data: markdownText),
-                ),
-              ),
+              // const SizedBox(height: 24),
+              // Card(
+              //   child: Container(
+              //     width: 500,
+              //     padding: const EdgeInsets.all(8.0),
+              //     child: MarkdownBody(data: markdownText),
+              //   ),
+              // ),
               // markdown文字列を表示する
               const SizedBox(height: 24),
               Card(
